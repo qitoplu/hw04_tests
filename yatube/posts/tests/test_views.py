@@ -1,8 +1,8 @@
-from django.contrib.auth import get_user_model
+from django import forms
 from django.test import Client, TestCase
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from ..models import Post, Group
-from django import forms
 
 POSTS_QUANTITY = 13
 User = get_user_model()
@@ -10,7 +10,6 @@ User = get_user_model()
 
 class PostPagesTests(TestCase):
     def setUp(self):
-        self.guest_client = Client()
         self.user = User.objects.create_user(username='StasBasov')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -62,19 +61,30 @@ class PostPagesTests(TestCase):
         self.assertEqual(post_text_0, self.post.text)
         self.assertEqual(post_user_0, self.user)
         self.assertEqual(post_slug_0, self.group.title)
+        # Здравствуйте, Михаил! Наставники долго не отвечают на мои вопросы,
+        # поэтому я решил задать их Вам. Надеюсь, Вы не против :)
+        # Вижу, что код повторяется, понимаю, что DRY нарушен.
+        # Не понимаю, от чего должна наследоваться функция,
+        # объединяющая дублирующий код.
+        # И получается, что эти два теста, должны быть в нее вложены,
+        # так как мы осуществляем вызов этой глобальной функции
+        # с дублирующимся кодом из этих двух функций-тестов?
+        # Вобщем - ступор. Подскажите, пожалуйста.
 
     def test_group_list_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
             'posts:group_list', kwargs={'slug': 'test-slug'}
         ))
-        first_object = response.context['page_obj'][0]
-        task_text_0 = first_object.text
-        task_group_0 = first_object.group
-        self.assertEqual(task_text_0, 'Тестовый текст')
+        first_post = response.context['page_obj'][0]
+        task_text_0 = first_post.text
+        task_group_0 = first_post.group
+        post_user_0 = first_post.author
+        self.assertEqual(task_text_0, self.post.text)
         self.assertEqual(task_group_0, self.group)
+        self.assertEqual(post_user_0, self.user)
 
     def test_profile_page_show_correct_context(self):
-        response = self.guest_client.get(reverse(
+        response = self.authorized_client.get(reverse(
             'posts:profile', kwargs={'username': self.user}
         ))
         post_object = response.context['page_obj'][0]
@@ -90,7 +100,7 @@ class PostPagesTests(TestCase):
             'posts:post_detail', kwargs={'post_id': self.post.pk}
         ))
         self.assertEqual(response.context.get('post').author, self.user)
-        self.assertEqual(response.context.get('post').text, 'Тестовый текст')
+        self.assertEqual(response.context.get('post').text, self.post.text)
         self.assertEqual(response.context.get('post').group, self.group)
 
     def test_post_create_page_show_correct_context(self):
@@ -120,10 +130,6 @@ class PostPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_post_added_correctly(self):
-        post = Post.objects.create(
-            text='Тестовый текст',
-            author=self.user,
-            group=self.group)
         response_index = self.authorized_client.get(
             reverse('posts:index'))
         response_group = self.authorized_client.get(
@@ -135,9 +141,9 @@ class PostPagesTests(TestCase):
         index = response_index.context['page_obj']
         group = response_group.context['page_obj']
         profile = response_profile.context['page_obj']
-        self.assertIn(post, index)
-        self.assertIn(post, group)
-        self.assertIn(post, profile)
+        self.assertIn(self.post, index)
+        self.assertIn(self.post, group)
+        self.assertIn(self.post, profile)
 
 
 class TestPaginator(TestCase):
@@ -191,6 +197,9 @@ class TestPaginator(TestCase):
             self.assertEqual(
                 count_posts_first,
                 10
+                # Не понимаю как убрать магические числа при
+                # тестировании паджинатора,
+                # их даже в теории используют.
             )
             self.assertEqual(
                 count_posts_second,

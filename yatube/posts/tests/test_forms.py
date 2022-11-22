@@ -1,8 +1,8 @@
 from django.test import TestCase, Client
-from ..models import Group, Post
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from http import HTTPStatus
+from ..models import Group, Post
 
 User = get_user_model()
 
@@ -16,11 +16,9 @@ class PostCreateFormTests(TestCase):
             slug='Тестовый слаг',
             description='Тестовое описание',
         )
-        cls.form = PostCreateFormTests()
 
     def setUp(self):
         super().setUp()
-        self.guest_client = Client()
         self.user = User.objects.create_user('test')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -34,12 +32,12 @@ class PostCreateFormTests(TestCase):
         self.authorized_client.post(
             reverse('posts:post_create'),
             data=form,
-            # follow=True,
         )
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertTrue(
             Post.objects.filter(
-                text='Текст нового поста',
+                text=form['text'],
+                group=PostCreateFormTests.group.id
             ).exists()
         )
 
@@ -68,7 +66,8 @@ class PostCreateFormTests(TestCase):
         self.assertTrue(Post.objects.filter(
             author=self.user,
             group=self.newgroup.id,
-            pub_date=self.post.pub_date
+            pub_date=self.post.pub_date,
+            id=previous_text.id
         ).exists()
         )
         self.assertNotEqual(previous_text.text, form_data['text'])
