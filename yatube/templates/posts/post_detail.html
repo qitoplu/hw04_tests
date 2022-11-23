@@ -33,7 +33,7 @@
         </aside>
         <article class="col-12 col-md-9">
           <p>
-            {{ post.text }}
+            {{ post }}
           </p>
           {% if post.author == user %}  
           <a class="btn btn-primary" href="{% url 'posts:post_edit' post.pk %}">

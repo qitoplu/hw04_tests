@@ -1,10 +1,11 @@
 from django import forms
 from django.test import Client, TestCase
-from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 from ..models import Post, Group
+from ..views import POSTS_QUANTITY
 
-POSTS_QUANTITY = 13
+POSTS_OVERALL = 13
 User = get_user_model()
 
 
@@ -50,50 +51,33 @@ class PostPagesTests(TestCase):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
 
+    def same_obj(self, post1, post2):
+        self.assertEqual(post2.text, post1.text)
+        self.assertEqual(post2.group, post1.group)
+        self.assertEqual(post2.author, post1.author)
+
     def test_index_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
             'posts:index'
         ))
-        first_post = response.context['page_obj'][0]
-        post_text_0 = first_post.text
-        post_user_0 = first_post.author
-        post_slug_0 = first_post.group.title
-        self.assertEqual(post_text_0, self.post.text)
-        self.assertEqual(post_user_0, self.user)
-        self.assertEqual(post_slug_0, self.group.title)
-        # Здравствуйте, Михаил! Наставники долго не отвечают на мои вопросы,
-        # поэтому я решил задать их Вам. Надеюсь, Вы не против :)
-        # Вижу, что код повторяется, понимаю, что DRY нарушен.
-        # Не понимаю, от чего должна наследоваться функция,
-        # объединяющая дублирующий код.
-        # И получается, что эти два теста, должны быть в нее вложены,
-        # так как мы осуществляем вызов этой глобальной функции
-        # с дублирующимся кодом из этих двух функций-тестов?
-        # Вобщем - ступор. Подскажите, пожалуйста.
+        post = response.context['page_obj'][0]
+        self.same_obj(post, self.post)
 
     def test_group_list_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
             'posts:group_list', kwargs={'slug': 'test-slug'}
         ))
-        first_post = response.context['page_obj'][0]
-        task_text_0 = first_post.text
-        task_group_0 = first_post.group
-        post_user_0 = first_post.author
-        self.assertEqual(task_text_0, self.post.text)
-        self.assertEqual(task_group_0, self.group)
-        self.assertEqual(post_user_0, self.user)
+        post = response.context['page_obj'][0]
+        self.same_obj(post, self.post)
 
     def test_profile_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
             'posts:profile', kwargs={'username': self.user}
         ))
         post_object = response.context['page_obj'][0]
-        post_author = post_object.author
-        post_text = post_object.text
-        post_pub_date = post_object.pub_date
-        self.assertEqual(post_author, self.user)
-        self.assertEqual(post_text, self.post.text)
-        self.assertEqual(post_pub_date, self.post.pub_date)
+        self.assertEqual(post_object.author, self.user)
+        self.assertEqual(post_object.text, self.post.text)
+        self.assertEqual(post_object.pub_date, self.post.pub_date)
 
     def test_post_detail_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
@@ -158,7 +142,7 @@ class TestPaginator(TestCase):
             description='Тестовое описание'
         )
         posts_list = []
-        for i in range(POSTS_QUANTITY):
+        for i in range(POSTS_OVERALL):
             posts_list.append(Post(
                 author=self.user,
                 text=f'Текстовый текст {i}',
@@ -178,11 +162,11 @@ class TestPaginator(TestCase):
             count_posts_second = len(response_second.context['page_obj'])
             self.assertEqual(
                 count_posts_first,
-                10
+                POSTS_QUANTITY
             )
             self.assertEqual(
                 count_posts_second,
-                3
+                POSTS_OVERALL - POSTS_QUANTITY
             )
 
     def test_paginator_works_authorized(self):
@@ -196,12 +180,9 @@ class TestPaginator(TestCase):
             count_posts_second = len(response_second.context['page_obj'])
             self.assertEqual(
                 count_posts_first,
-                10
-                # Не понимаю как убрать магические числа при
-                # тестировании паджинатора,
-                # их даже в теории используют.
+                POSTS_QUANTITY
             )
             self.assertEqual(
                 count_posts_second,
-                3
+                POSTS_OVERALL - POSTS_QUANTITY
             )

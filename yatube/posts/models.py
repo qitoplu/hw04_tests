@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+CONSTANT_SYMBOLS = 15
+
 
 class Post(models.Model):
     text = models.TextField(verbose_name='Текст')
@@ -23,7 +25,7 @@ class Post(models.Model):
     )
 
     def __str__(self):
-        return self.text[:15]
+        return self.text[:CONSTANT_SYMBOLS]
 
     class Meta:
         verbose_name = ('Посты')

@@ -1,6 +1,6 @@
+from http import HTTPStatus
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from http import HTTPStatus
 from ..models import Post, Group
 
 User = get_user_model()
