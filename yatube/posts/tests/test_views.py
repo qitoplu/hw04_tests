@@ -1,8 +1,9 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.contrib.auth import get_user_model
-from ..models import Post, Group
+
+from ..models import Group, Post
 from ..views import POSTS_QUANTITY
 
 POSTS_OVERALL = 13
@@ -74,18 +75,15 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(reverse(
             'posts:profile', kwargs={'username': self.user}
         ))
-        post_object = response.context['page_obj'][0]
-        self.assertEqual(post_object.author, self.user)
-        self.assertEqual(post_object.text, self.post.text)
-        self.assertEqual(post_object.pub_date, self.post.pub_date)
+        post = response.context['page_obj'][0]
+        self.same_obj(post, self.post)
 
     def test_post_detail_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(
             'posts:post_detail', kwargs={'post_id': self.post.pk}
         ))
-        self.assertEqual(response.context.get('post').author, self.user)
-        self.assertEqual(response.context.get('post').text, self.post.text)
-        self.assertEqual(response.context.get('post').group, self.group)
+        post = response.context.get('post')
+        self.same_obj(post, self.post)
 
     def test_post_create_page_show_correct_context(self):
         response = self.authorized_client.get(reverse(

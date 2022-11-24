@@ -1,6 +1,7 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from ..models import Group, Post, CONSTANT_SYMBOLS
+from django.test import TestCase
+
+from ..models import CONSTANT_SYMBOLS, Group, Post
 
 User = get_user_model()
 
